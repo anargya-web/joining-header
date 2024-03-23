@@ -3,24 +3,31 @@
 namespace PluginTemplate
 {
     [ApiVersion(2, 1)]
-    public partial class Plugin : TerrariaPlugin
+    public class StatusText : Module
     {
-        public override void Initialize()
+        public bool BlockVanillaStatus { get; set; } = true;
+        private bool _isSendingStatus;
+
+        public StatusText(Plugin p) : base(p)
         {
-            // Initialize here
-            // Hooks
-            // ServerApi.Hooks
-            // OTAPI.Hooks
-            // On.Terraria Monomod hooks
+            ServerApi.Hooks.NetSendData.Register(p, OnNetSendData);
         }
 
-        protected override void Dispose(bool disposing)
+        private void OnNetSendData(SendDataEventArgs args)
         {
-            if (disposing)
-            {
-                // Dispose here
-            }
-            base.Dispose(disposing);
+            if (args.MsgId == PacketTypes.Status && !_isSendingStatus)
+                args.Handled = true;
+        }
+
+        public void SendStatusPacket(TSPlayer player, string text, int max = 0, byte flags = 1)
+        {
+            _isSendingStatus = true;
+            player.SendData(PacketTypes.Status, text, max, flags);
+            _isSendingStatus = false;
+        }
+
+        public override void Dispose()
+        {
         }
     }
 }
